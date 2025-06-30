@@ -1,0 +1,269 @@
+<style>
+    .advocacy-container { max-width: 880px; margin: 0 auto; padding: 20px; font-family: 'Source Sans Pro', sans-serif; color: #1F2937; }
+    .advocacy-header { text-align: center; margin-bottom: 40px; }
+    .impact-tool-container { background-color: #F3F4F6; border: 1px solid #e0e0e0; padding: 25px; margin-bottom: 40px; border-radius: 5px; }
+    .impact-tool-container h2 { margin-top: 0; color: #003366; }
+    .impact-tool-container label { font-weight: bold; display: block; margin-top: 15px; }
+    .impact-tool-container input[type="text"], .impact-tool-container select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; font-size: inherit; font-family: inherit; }
+    .lookup-button, .pdf-button, .copy-button { display: inline-block; background-color: #0F62FE; color: white; padding: 12px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; text-align: center; margin-top: 15px; text-decoration: none; }
+    .lookup-button:hover, .pdf-button:hover, .copy-button:hover { background-color: #003BB5; }
+    .or-divider { text-align: center; margin: 20px 0; font-weight: bold; color: #666; }
+    #personalized-results { margin-top: 25px; padding: 25px; border: 1px solid #e0e0e0; border-radius: 5px; background-color: #f8f9fa; }
+    #personalized-results h3 { color: #003366; margin-top: 0; }
+    .data-point { margin-bottom: 12px; line-height: 1.5; }
+    .official-contact-card { margin-top: 10px; padding-bottom: 10px; border-bottom: 1px solid #ddd; }
+    .official-contact-card:last-child { border-bottom: none; padding-bottom: 0; }
+    .sample-letter-container { border: 1px solid #ccc; padding: 25px; background-color: #ffffff; margin-top: 40px; }
+    #sample-letter-content { width: 100%; min-height: 400px; padding: 15px; box-sizing: border-box; border: 1px solid #ccc; font-family: inherit; font-size: inherit; line-height: 1.6; background-color: #fdfdfd; }
+</style>
+
+<div class="advocacy-container">
+    <div style="margin-bottom: 25px;"><a href="/take-action">« Back to Take Action Hub</a></div>
+    <div id="page-content-container">
+        <div class="advocacy-header"><h1 id="page-headline">Loading Page Content...</h1></div>
+        <div id="page-intro"><p></p></div>
+    </div>
+    <div class="impact-tool-container">
+        <h2>Find Your Representatives & Local Impact Data</h2>
+        <p>Use the tools below to find your officials and the data specific to your area. This information will be used to personalize the sample message.</p>
+        <div>
+            <label for="address-lookup">Option 1: Find District by Full Address</label>
+            <input type="text" id="address-lookup" placeholder="Enter your full street address, city, state, zip">
+            <button id="address-lookup-btn" class="lookup-button">Find My District</button>
+        </div>
+        <div class="or-divider">OR</div>
+        <div>
+            <label for="state-select">Option 2: Select Your District Manually</label>
+            <select id="state-select"><option value="">-- Select Your State --</option></select>
+            <select id="district-select" disabled><option value="">-- Select Your District --</option></select>
+        </div>
+    </div>
+    <div id="personalized-results" style="display: none;">
+        <h3>Your Personalized Information</h3>
+        <div class="data-point" id="officials-info"></div>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 15px 0;">
+        <div class="data-point" id="district-data-info"></div>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 15px 0;">
+        <div class="data-point" id="state-data-info"></div>
+        <a id="pdf-download-btn" class="pdf-button" href="#" target="_blank" style="display: none;">Download Your District Fact Sheet</a>
+    </div>
+    <div id="sample-letter-container" class="sample-letter-container" style="display: none;">
+        <h2>Step 3: Copy and Send Your Message</h2>
+        <p>Your sample message has been personalized below. Use the button to copy the text, then paste it into an email or contact form for your officials.</p>
+        <div id="sample-letter-content"></div>
+        <button id="copy-letter-btn" class="copy-button">Copy Letter Text</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<script>
+    (function() {
+        const config = {
+            geocodioKey: 'e6b27467818e8b6b5428b54253e85185b751b41',
+            districtDataUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRS51yfSbpUQdw0YW2X25bm4Q550u6l5tH1F9zfgGQdL-QxmU_dpDUzSKa1tXbTrYStV3HmYjY6hp5N/pub?gid=443180837&single=true&output=csv',
+            pageContentUrl: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRS51yfSbpUQdw0YW2X25bm4Q550u6l5tH1F9zfgGQdL-QxmU_dpDUzSKa1tXbTrYStV3HmYjY6hp5N/pub?gid=1383510945&single=true&output=csv',
+        };
+        let districtData = [];
+        let pageContent = {};
+        const pageHeadline = document.getElementById('page-headline');
+        const pageIntro = document.getElementById('page-intro');
+        const stateSelect = document.getElementById('state-select');
+        const districtSelect = document.getElementById('district-select');
+        const resultsContainer = document.getElementById('personalized-results');
+        const officialsInfo = document.getElementById('officials-info');
+        const districtDataInfo = document.getElementById('district-data-info');
+        const stateDataInfo = document.getElementById('state-data-info');
+        const pdfButton = document.getElementById('pdf-download-btn');
+        const letterContainer = document.getElementById('sample-letter-container');
+        const letterContent = document.getElementById('sample-letter-content');
+        const copyBtn = document.getElementById('copy-letter-btn');
+        const addressInput = document.getElementById('address-lookup');
+        const addressBtn = document.getElementById('address-lookup-btn');
+
+        function loadSheetData(url) {
+            return new Promise((resolve, reject) => {
+                Papa.parse(url, {
+                    download: true, header: true, skipEmptyLines: true,
+                    complete: (results) => resolve(results.data),
+                    error: (err) => reject(err)
+                });
+            });
+        }
+
+        async function initializePage() {
+            try {
+                const [contentRows, dataRows] = await Promise.all([
+                    loadSheetData(config.pageContentUrl),
+                    loadSheetData(config.districtDataUrl)
+                ]);
+                pageContent = contentRows.find(row => row.PageID === 'contact-congress');
+                districtData = dataRows;
+                if (pageContent) {
+                    pageHeadline.textContent = pageContent.Headline;
+                    pageIntro.innerHTML = `<p>${pageContent.IntroParagraph}</p>`;
+                }
+                if (districtData && districtData.length > 0) {
+                    populateStateDropdown();
+                    setupEventListeners();
+                }
+            } catch (err) { console.error("Error initializing page:", err); }
+        }
+        
+        function populateStateDropdown() {
+            const stateMap = new Map(districtData.map(item => [item.State, item.State]));
+            const sortedStates = [...stateMap.values()].sort();
+            sortedStates.forEach(stateName => {
+                const option = document.createElement('option');
+                option.value = stateName;
+                option.textContent = stateName;
+                stateSelect.appendChild(option);
+            });
+        }
+
+        function setupEventListeners() {
+            stateSelect.addEventListener('change', () => {
+                const selectedState = stateSelect.value;
+                districtSelect.innerHTML = '<option value="">-- Select Your District --</option>';
+                districtSelect.disabled = true;
+                resultsContainer.style.display = 'none';
+                letterContainer.style.display = 'none';
+                if (selectedState) {
+                    const districts = districtData.filter(item => item.State === selectedState).map(item => item.District).sort((a, b) => a.localeCompare(b, undefined, {numeric: true}));
+                    districts.forEach(district => {
+                        const option = document.createElement('option');
+                        option.value = district;
+                        option.textContent = district;
+                        districtSelect.appendChild(option);
+                    });
+                    districtSelect.disabled = false;
+                }
+            });
+            districtSelect.addEventListener('change', () => {
+                const state = stateSelect.value;
+                const district = districtSelect.value;
+                if (state && district) {
+                    const record = districtData.find(item => item.State === state && item.District === district);
+                    displayResults(record, null); 
+                }
+            });
+            
+            addressBtn.addEventListener('click', async () => {
+                const address = addressInput.value.trim();
+                if (!address) { alert('Please enter an address.'); return; }
+                addressBtn.textContent = 'Looking up...';
+                addressBtn.disabled = true;
+
+                try {
+                    const url = `https://api.geocod.io/v1.7/geocode?q=${encodeURIComponent(address)}&fields=cd&api_key=${config.geocodioKey}`;
+                    const response = await fetch(url);
+                    const data = await response.json();
+
+                    if (response.ok && data.results && data.results.length > 0) {
+                        const apiResult = data.results[0];
+                        const stateAbbr = apiResult.address_components.state;
+                        
+                        const stateRecord = districtData.find(d => d.StateAbbr === stateAbbr);
+                        if (stateRecord) {
+                            const districtNum = apiResult.fields.congressional_districts[0].district_number.toString();
+                            stateSelect.value = stateRecord.State;
+                            stateSelect.dispatchEvent(new Event('change'));
+                            
+                            setTimeout(() => {
+                                districtSelect.value = districtNum;
+                                districtSelect.dispatchEvent(new Event('change'));
+                                // Pass the live API data to the display function
+                                displayResults(stateRecord, apiResult.fields.congressional_districts[0]);
+                            }, 100);
+                        } else {
+                            alert(`Could not match state abbreviation '${stateAbbr}' in our data.`);
+                        }
+                    } else {
+                        throw new Error(data.error || "No congressional district found for this address.");
+                    }
+                } catch (error) {
+                    console.error("Address lookup error:", error);
+                    alert("An error occurred during the address lookup.");
+                } finally {
+                    addressBtn.textContent = 'Find My District';
+                    addressBtn.disabled = false;
+                }
+            });
+
+            copyBtn.addEventListener('click', () => {
+                const textToCopy = letterContent.innerText;
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    copyBtn.textContent = 'Copied!';
+                    setTimeout(() => { copyBtn.textContent = 'Copy Letter Text'; }, 2000);
+                }).catch(err => console.error('Failed to copy text: ', err));
+            });
+        }
+        
+        function displayResults(dbRecord, apiData) {
+            if (!dbRecord) return;
+
+            // --- UPDATED DISPLAY LOGIC WITH SOCIAL MEDIA ---
+            const buildContactCard = (title, bio, contact, social) => {
+                if (!bio) return '';
+                let card = `<div class="official-contact-card"><strong>${title}: ${bio.first_name} ${bio.last_name} (${bio.party})</strong>`;
+                if (contact) {
+                    if (contact.phone) card += `<br>Phone: ${contact.phone}`;
+                    if (contact.address) card += `<br>Address: ${contact.address}`;
+                    card += `<br>`;
+                    if (contact.url) card += `<a href="${contact.url}" target="_blank" rel="noopener noreferrer">Website</a>`;
+                    if (contact.contact_form) {
+                        if (contact.url) card += ` | `;
+                        card += `<a href="${contact.contact_form}" target="_blank" rel="noopener noreferrer">Contact Form</a>`;
+                    }
+                }
+                if (social) {
+                    if(social.twitter) card += ` | <a href="https://twitter.com/${social.twitter}" target="_blank" rel="noopener noreferrer">Twitter</a>`;
+                    if(social.facebook) card += ` | <a href="https://facebook.com/${social.facebook}" target="_blank" rel="noopener noreferrer">Facebook</a>`;
+                }
+                card += `</div>`;
+                return card;
+            };
+
+            let rep, sen1, sen2;
+            if (apiData && apiData.current_legislators) {
+                rep = apiData.current_legislators.find(l => l.type === 'representative');
+                const senators = apiData.current_legislators.filter(l => l.type === 'senator');
+                sen1 = senators.find(s => s.seniority === 'senior') || senators[0];
+                sen2 = senators.find(s => s.seniority === 'junior') || senators[1];
+            } else {
+                // Fallback to Google Sheet data if API fails or is not used
+                rep = { bio: { first_name: dbRecord.Rep_FirstName, last_name: dbRecord.Rep_LastName, party: dbRecord.Rep_Party }, contact: {}, social: {} };
+                sen1 = { bio: { first_name: dbRecord.Sen1_FirstName, last_name: dbRecord.Sen1_LastName, party: dbRecord.Sen1_Party }, contact: {}, social: {} };
+                sen2 = { bio: { first_name: dbRecord.Sen2_FirstName, last_name: dbRecord.Sen2_LastName, party: dbRecord.Sen2_Party }, contact: {}, social: {} };
+            }
+
+            officialsInfo.innerHTML = buildContactCard('Representative', rep.bio, rep.contact, rep.social) 
+                                    + buildContactCard('Senator', sen1.bio, sen1.contact, sen1.social) 
+                                    + buildContactCard('Senator', sen2.bio, sen2.contact, sen2.social);
+
+            districtDataInfo.innerHTML = `<strong>In Your District (${dbRecord.StateAbbr}-${dbRecord.District}):</strong><br>Total Small Business Revenue: ${dbRecord.District_TotalSBRevenue}<br>% of Revenue from Set-Asides: ${dbRecord.District_PercentFromSetAsides}<br>% Small Business Vendor Decline: ${dbRecord.District_PercentVendorDecline}`;
+            stateDataInfo.innerHTML = `<strong>In Your State (${dbRecord.State}):</strong><br>Total Small Business Revenue: ${dbRecord.State_TotalSBRevenue}<br>% of Revenue from Set-Asides: ${dbRecord.State_PercentFromSetAsides}<br>% Small Business Vendor Decline: ${dbRecord.State_PercentVendorDecline}`;
+            
+            pdfButton.style.display = 'inline-block';
+
+            if (pageContent && pageContent.SampleLetter) {
+                let letterTemplate = pageContent.SampleLetter;
+                let personalizedLetter = letterTemplate
+                    .replace(/\[Member Name\]/g, `the Honorable ${rep.bio.first_name} ${rep.bio.last_name}`)
+                    .replace(/\[Your District\]/g, `${dbRecord.StateAbbr}-${dbRecord.District}`)
+                    .replace(/\[\$X District Data\]/g, `${dbRecord.District_TotalSBRevenue}`)
+                    .replace(/\[Your State\]/g, dbRecord.State)
+                    .replace(/\[\$Y State Data\]/g, `${dbRecord.State_TotalSBRevenue}`);
+                
+                letterContent.innerHTML = personalizedLetter;
+                letterContainer.style.display = 'block';
+            } else {
+                letterContainer.style.display = 'none';
+            }
+            resultsContainer.style.display = 'block';
+        }
+        
+        document.addEventListener('DOMContentLoaded', initializePage);
+    })();
+</script>
+
+Add working script for Contact Congress with District Lookup 6/30/25
