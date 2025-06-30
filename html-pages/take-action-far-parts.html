@@ -1,0 +1,250 @@
+This code is for: /take-action-far-parts
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restore Fair Access - Submit Your Comments</title>
+    <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-blue: #007bff; --primary-blue-hover: #0056b3; --primary-green: #28a745; --primary-green-hover: #1e7e34; }
+        html { scroll-behavior: smooth; }
+        body { font-family: 'Source Sans Pro', sans-serif; background-color: #f8f9fa; color: #1F2937; margin: 0; padding: 0; }
+        .advocacy-container { max-width: 880px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .progress-bar-container { width: 100%; background-color: #e0e0e0; border-radius: 10px; margin-bottom: 25px; overflow: hidden; }
+        .progress-bar { width: 16.6%; height: 20px; background-color: #0F62FE; border-radius: 10px; text-align: center; color: white; font-weight: bold; line-height: 20px; transition: width 0.5s ease-in-out; }
+        .step-header { text-align: center; margin-bottom: 20px; }
+        .step-header h1 { color: #003366; margin-bottom: 5px; }
+        .step-explainer { background-color: #F3F4F6; border-left: 5px solid #0F62FE; padding: 15px; margin-bottom: 25px; border-radius: 0 5px 5px 0; }
+        .step-explainer p { margin: 0; font-style: italic; color: #4A5568; }
+        .comment-container-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;}
+        .comment-container-header h3 { margin: 0; color: #1F2937; flex-grow: 1; }
+        .nav-links { display: flex; gap: 15px; }
+        .nav-link { font-size: 0.9em; text-decoration: underline; color: var(--primary-blue); cursor: pointer; }
+        .comment-container { border: 1px solid #ccc; padding: 25px; background-color: #ffffff; margin-bottom: 25px; }
+        .comment-box { width: 100%; min-height: 350px; padding: 15px; box-sizing: border-box; border: 1px solid #ccc; font-family: inherit; font-size: 1em; line-height: 1.6; background-color: #fdfdfd; overflow-y: auto; white-space: pre-wrap; }
+        .action-buttons-container { display: grid; grid-template-columns: 1fr; gap: 15px; }
+        .action-button, .confirmation-button { display: block; width: 100%; box-sizing: border-box; color: white; padding: 15px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; text-align: center; font-size: 1.2em; text-decoration: none; transition: background-color 0.3s; }
+        .action-button { background-color: var(--primary-blue); }
+        .action-button:hover { background-color: var(--primary-blue-hover); }
+        .confirmation-button { background-color: var(--primary-green); }
+        .confirmation-button:hover { background-color: var(--primary-green-hover); }
+        #final-step-instructions { background-color: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 5px; margin-top: 15px; text-align: center;}
+        #success-message { text-align: center; padding: 20px; font-size: 1.2em; color: var(--primary-green); font-weight: bold; display: none; }
+    </style>
+</head>
+<body>
+
+<div id="top-of-page"></div>
+<div class="advocacy-container">
+    <div id="success-message"></div>
+    <div id="progress-container" class="progress-bar-container">
+        <div id="progress-bar" class="progress-bar">16.6%</div>
+    </div>
+
+    <div class="step-header">
+        <h1 id="step-title">Step 1 of 6: Comment on FAR Part 1</h1>
+    </div>
+
+    <div id="step-explainer" class="step-explainer">
+        <p><strong>Why this Part matters:</strong> FAR Part 1 is the DNA of the rulebook. The changes here create a 'Regulatory Sunset' that could make all small business programs expire every 4 years, and they remove the public's right to participate in the rulemaking process.</p>
+    </div>
+
+    <div class="comment-container">
+        <div class="comment-container-header">
+            <h3>Your Personalized Comment for <span id="current-far-part">FAR Part 1</span></h3>
+            <div class="nav-links">
+                <a id="back-link" class="nav-link" style="display: none;">&larr; Go Back</a>
+                <a id="edit-info-link" href="/take-action-far-council" class="nav-link">Edit Your Information</a>
+            </div>
+        </div>
+        <div id="comment-text-box" class="comment-box">Loading...</div>
+    </div>
+    
+    <div class="action-buttons-container">
+        <button id="copy-btn" class="action-button">Step A: Copy Comment to Clipboard</button>
+        <a id="gsa-link" href="#" target="_blank" class="action-button">Step B: Open Official FAR Comment Form</a>
+        <div id="final-step-instructions" style="display: none;">
+            <p><strong>Important:</strong> For this final step, please submit the same comment text at each of the links below, one at a time.</p>
+            <div id="final-links-container" class="action-buttons-container"></div>
+        </div>
+        <button id="confirm-btn" class="confirmation-button">Step C: I Have Submitted My Comment</button>
+    </div>
+</div>
+
+<script>
+(function() {
+    const advocacySteps = [
+        { farPart: "FAR Part 1", title: "Step 1 of 6: Comment on FAR Part 1", progress: "16.6%", explainer: "<strong>Why this Part matters:</strong> FAR Part 1 is the DNA of the rulebook. The changes here create a 'Regulatory Sunset' that could make all small business programs expire every 4 years, and they remove the public's right to participate in the rulemaking process.", gsaLink: "https://feedback.gsa.gov/jfe/form/SV_6eZqHFGAk8TRtOu" },
+        { farPart: "FAR Part 6", title: "Step 2 of 6: Comment on FAR Part 6", progress: "33.2%", explainer: "<strong>Why this Part matters:</strong> This part covers competition. The changes demote small business set-asides from a primary tool to an afterthought and weaken the role of the internal watchdog meant to enforce competition.", gsaLink: "https://feedback.gsa.gov/jfe/form/SV_b42VMwHPhYZBI3Q" },
+        { farPart: "FAR Part 10", title: "Step 3 of 6: Comment on FAR Part 10", progress: "49.8%", explainer: "<strong>Why this Part matters:</strong> This is the crucial first step of market research. The changes remove the requirement to consult with small business experts before combining contracts, making it easier to create deals that are too large for small businesses to compete for.", gsaLink: "https://feedback.gsa.gov/jfe/form/SV_cvzFajCemh5KtQW" },
+        { farPart: "FAR Part 11", title: "Step 4 of 6: Comment on FAR Part 11", progress: "66.4%", explainer: "<strong>Why this Part matters:</strong> This part transfers huge risks to contractors. It removes protections against impossibly short deadlines and eliminates standard clauses that protected you from financial loss if the government drastically misjudged the quantity of work.", gsaLink: "https://feedback.gsa.gov/jfe/form/SV_3NOkSh292mbBv14" },
+        { farPart: "FAR Part 52", title: "Step 5 of 6: Comment on FAR Part 52", progress: "83%", explainer: "<strong>Why this Part matters:</strong> This part contains the actual contract clauses. Deleting standard clauses creates legal chaos and increases risk.", gsaLink: "https://feedback.gsa.gov/jfe/form/SV_0dM1iXZsTA2jcay" },
+        { farPart: "Remaining Parts", title: "Step 6 of 6: Comment on Remaining Parts", progress: "100%", explainer: "<strong>Why this matters:</strong> These final parts create instability and barriers to entry. Please submit a comment for each one.", gsaLinks: [
+            { part: "18", link: "https://feedback.gsa.gov/jfe/form/SV_5umPs44e6xdF7v0" },
+            { part: "34", link: "https://feedback.gsa.gov/jfe/form/SV_afccTcM8gvwWDQ2" },
+            { part: "39", link: "https://feedback.gsa.gov/jfe/form/SV_dcWmBDkmjAunqnA" },
+            { part: "43", link: "https://feedback.gsa.gov/jfe/form/SV_0kplu6aw4ehI4iG" }
+        ]}
+    ];
+
+    const elements = {
+        successMessage: document.getElementById('success-message'),
+        progressBar: document.getElementById('progress-bar'),
+        stepTitle: document.getElementById('step-title'),
+        stepExplainer: document.getElementById('step-explainer'),
+        currentFarPartSpan: document.getElementById('current-far-part'),
+        commentTextBox: document.getElementById('comment-text-box'),
+        copyBtn: document.getElementById('copy-btn'),
+        gsaLink: document.getElementById('gsa-link'),
+        finalStepContainer: document.getElementById('final-step-instructions'),
+        finalLinksContainer: document.getElementById('final-links-container'),
+        confirmBtn: document.getElementById('confirm-btn'),
+        backLink: document.getElementById('back-link'),
+        editInfoLink: document.getElementById('edit-info-link'),
+        topOfPage: document.getElementById('top-of-page')
+    };
+
+    let currentStepIndex = 0;
+    let advocacyData = {};
+
+    document.addEventListener('DOMContentLoaded', initializePage);
+
+    function initializePage() {
+        const storedData = sessionStorage.getItem('advocacyData');
+        if (!storedData) {
+            window.location.href = '/take-action-far-council';
+            return;
+        }
+        advocacyData = JSON.parse(storedData);
+        if (!advocacyData.submissions) advocacyData.submissions = {};
+        
+        setupEventListeners();
+        currentStepIndex = Object.keys(advocacyData.submissions).length;
+        if(currentStepIndex >= advocacySteps.length) currentStepIndex = 0;
+        renderStep(currentStepIndex);
+    }
+
+    function setupEventListeners() {
+        elements.copyBtn.addEventListener('click', copyCommentToClipboard);
+        elements.confirmBtn.addEventListener('click', handleConfirmation);
+        elements.backLink.addEventListener('click', handleGoBack);
+    }
+
+    function renderStep(stepIndex) {
+        elements.topOfPage.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        const step = advocacySteps[stepIndex];
+        
+        elements.progressBar.style.width = step.progress;
+        elements.progressBar.textContent = step.progress;
+        elements.stepTitle.textContent = step.title;
+        elements.stepExplainer.innerHTML = step.explainer;
+        elements.currentFarPartSpan.textContent = step.farPart;
+        elements.commentTextBox.textContent = generateCommentForStep(step.farPart);
+
+        elements.editInfoLink.style.display = stepIndex === 0 ? 'inline' : 'none';
+
+        if (step.farPart === "Remaining Parts") {
+            elements.gsaLink.style.display = 'none';
+            elements.finalStepContainer.style.display = 'block';
+            elements.finalLinksContainer.innerHTML = '';
+            step.gsaLinks.forEach(item => {
+                const link = document.createElement('a');
+                link.href = item.link;
+                link.textContent = `Open Form for FAR Part ${item.part}`;
+                link.className = 'action-button';
+                link.target = '_blank';
+                link.style.marginBottom = '10px';
+                elements.finalLinksContainer.appendChild(link);
+            });
+        } else {
+            elements.gsaLink.style.display = 'block';
+            elements.finalStepContainer.style.display = 'none';
+            elements.gsaLink.href = step.gsaLink;
+        }
+        
+        elements.backLink.style.display = stepIndex > 0 ? 'inline' : 'none';
+        elements.copyBtn.textContent = 'Step A: Copy Comment to Clipboard';
+        elements.confirmBtn.disabled = false;
+        elements.confirmBtn.textContent = 'Step C: I Have Submitted My Comment';
+    }
+    
+    function handleGoBack() {
+        if (currentStepIndex > 0) {
+            const lastSubmittedPart = advocacySteps[currentStepIndex - 1].farPart;
+            delete advocacyData.submissions[lastSubmittedPart];
+            sessionStorage.setItem('advocacyData', JSON.stringify(advocacyData));
+            
+            currentStepIndex--;
+            renderStep(currentStepIndex);
+        }
+    }
+
+    function handleConfirmation() {
+        const currentPart = advocacySteps[currentStepIndex].farPart;
+        advocacyData.submissions[currentPart] = new Date().toISOString();
+        sessionStorage.setItem('advocacyData', JSON.stringify(advocacyData));
+        elements.confirmBtn.disabled = true;
+        elements.confirmBtn.textContent = 'Recording Submission...';
+        
+        currentStepIndex++;
+        if (currentStepIndex < advocacySteps.length) {
+            elements.successMessage.textContent = `Success! Your action for ${currentPart} has been recorded. Let's move to the next one!`;
+            elements.successMessage.style.display = 'block';
+            setTimeout(() => {
+                elements.successMessage.style.display = 'none';
+                renderStep(currentStepIndex);
+            }, 2500);
+        } else {
+            window.location.href = '/take-action-far-council-thank-you';
+        }
+    }
+    
+    function generateCommentForStep(farPart) {
+        const salutation = `To the Federal Acquisition Regulatory Council:\n\nI am writing as the owner of ${advocacyData.businessName}. While I support the goal of a more efficient acquisition system, the RFO, in its current form, creates severe and unacceptable "unintended consequences" that undermine the statutory mandate to provide small businesses with the "maximum practicable opportunity" to compete.`;
+        const personalStory = advocacyData.personalStory ? `\n\n(1) My Personal Experience: ${advocacyData.personalStory}` : '';
+        const generalPoints = `\n\n(2) The Flawed "Adopt First, Finalize Later" Implementation: The unprecedented use of rolling class deviations to implement massive, government-wide policy changes circumvents the transparent, legally-mandated notice-and-comment process required by the Administrative Procedure Act. This "adopt first, finalize later" approach denies stakeholders a meaningful opportunity to provide input before a rule takes effect, rendering the eventual rulemaking process performative rather than substantive.\n\n(3) The Systemic Removal of Procedural Safeguards Dismantles the Small Business Safety Net: The RFO does not just change individual rules; it severs the connective tissue that links them together. By removing small business considerations from FAR Parts 10 (Market Research), 6 (Competition), and 11 (Describing Agency Needs), you have effectively created a procedural vacuum. Contracting officers are no longer explicitly prompted to consider a set-aside, consult with the SBA before bundling, or avoid unnecessarily restrictive schedules. The burden has been shifted from the government to the small business community to police the entire acquisition process, which is an unfair and unsustainable expectation.\n\n(4) Direct Economic Harm to Local Communities: This is not just a regulatory issue; it is a significant economic issue with direct consequences for local economies and jobs in every congressional district. In my district (${advocacyData.congressionalDistrict}), small businesses received ${advocacyData.districtData.revenue} in federal contracts last year, with ${advocacyData.districtData.setAsidePercent} of that coming from set-asides. Already, policies favoring contract consolidation have contributed to a ${advocacyData.districtData.decline} decline in the number of unique small business suppliers in my district over the last ${advocacyData.districtData.declineYears} years. The RFO, by dismantling the very procedures that ensure local firms can compete, will only accelerate this decline, harming the industrial base and the economic health of our community.\n\n(5) The Transfer of Risk to Contractors Will Increase Costs and Reduce Competition: The elimination of standard, predictable risk-allocation clauses—most notably the "Variation in Quantity" clause from FAR Part 11—is a direct financial threat to my business. This forces us to price for worst-case scenarios, which will either make our bids uncompetitive or increase the ultimate cost to the taxpayer. This change will drive small firms out of the market and reduce competition.`;
+        let specificComments = "";
+        
+        switch(farPart) {
+            case "FAR Part 1":
+                specificComments = `\n\n---\nSpecific Comments on FAR Part 1:\n\nThe changes to FAR Part 1 have created two severe unintended consequences for my small business.\n\n(1) The "Regulatory Sunset" (FAR 1.109) creates perpetual instability. The federal marketplace requires predictability. The provision that all non-statutory regulations—including the "Rule of Two" and all socioeconomic set-aside programs—will expire every four years unless renewed introduces a level of uncertainty that is toxic to investment and will discourage small businesses from entering or remaining in the market.\n\n(2) The removal of former Subpart 1.5, "Agency and Public Participation," silences our voice. This action does not comport with the Administrative Procedure Act, which guarantees public participation in rulemaking. The practical effect of removing the formal process before a new one is legally established is to strip stakeholders of their right to due process. An informal feedback website is not a legally sufficient substitute.\n\nRecommendation:\n\nImmediately halt the implementation of the RFO via class deviations and re-engage with this process through the proper, transparent, and legally mandated notice-and-comment rulemaking process.\n\nRestore the public participation procedures formerly in Subpart 1.5.\n\nRepeal FAR 1.109, the "Regulatory Sunset," entirely or, at a minimum, amend it to explicitly exempt all of FAR Part 19 and its implementing clauses from its scope to ensure program stability.`;
+                break;
+             case "FAR Part 6":
+                specificComments = `\n\n---\nSpecific Comments on FAR Part 6:\n\nThe revision of FAR Part 6 has two significant, negative unintended consequences.\n\n(1) It demotes set-asides from a primary competition tool to a discretionary afterthought. By deleting the dedicated subpart for set-asides (former 6.2) and replacing it with a single, permissive paragraph using "may set aside," you have created a direct conflict with the mandatory nature of the "Rule of Two" in Part 19 and encouraged a culture of non-compliance.\n\n(2) It weakens the Competition Advocate. By gutting the specific duties of the agency Competition Advocate (former Subpart 6.5), you have removed the primary internal check-and-balance responsible for challenging anti-competitive practices like improper bundling.\n\nRecommendation:\n\nTo restore competition integrity:\n\n(1) Revise the new 6.102-2 to read: "Contracting officers shall set aside acquisitions for small business concerns when required by Part 19." This restores the mandatory nature of the Rule of Two.\n\n(2) Reinstate the specific duties and reporting requirements of the agency Competition Advocate as detailed in the former Subpart 6.5 to restore internal accountability.`;
+                break;
+            case "FAR Part 10":
+                specificComments = `\n\n---\nSpecific Comments on FAR Part 10:\n\nThe removal of former FAR 10.001(c) has created a dangerous unintended consequence. By eliminating the mandatory requirement for a contracting officer to consult with the agency's Small Business Specialist and the SBA's Procurement Center Representative before bundling a requirement, you have removed the single most effective procedural safeguard against the creation of contracts that are too large for small businesses to fairly compete for. Market research is the first step in an acquisition. Placing this requirement only in FAR Part 7 (Acquisition Planning) is too late in the process. This change makes it far more likely that anti-competitive contract structures will be developed, harming my business and the entire small business industrial base.\n\nRecommendation:\n\nRestore the mandatory consultation requirements from the former FAR 10.001(c) directly into the text of FAR Part 10. This includes the requirement for a contracting officer to consult with the agency's Small Business Specialist and the SBA's Procurement Center Representative before a decision to bundle or consolidate is finalized. Relying on a separate FAR Part is insufficient; this critical safeguard must be integrated into the market research process itself.`;
+                break;
+            case "FAR Part 11":
+                specificComments = `\n\n---\nSpecific Comments on FAR Part 11:\n\nThe wholesale deletion of FAR Subpart 11.4 (Delivery Schedules) and Subpart 11.7 (Variation in Quantity) creates severe unintended consequences by transferring massive, unmanageable risk to small contractors.\n\n(1) The deletion of the Variation in Quantity clauses (e.g., 52.211-18) is a direct financial threat. This standard clause provided a fair and predictable way to handle quantity changes. Without it, my business is now exposed to potentially catastrophic losses from a significant government estimating error. To protect myself, I must now increase my bid prices, which makes me less competitive and ultimately increases costs for the taxpayer.\n\n(2) The deletion of the policy against unnecessarily restrictive schedules removes a key protection against unfair competition. It gives agencies a tool to implicitly exclude small businesses by setting deadlines only large incumbents can meet.\n\nRecommendation:\n\nRestore the former FAR Subpart 11.7 and its implementing clauses, including 52.211-18, Variation in Estimated Quantity. These standard clauses are essential for fair risk allocation. Also, restore the policy from former FAR 11.401 prohibiting the use of "unnecessarily short or difficult to attain" delivery schedules that are inconsistent with small business policies.`;
+                break;
+            case "FAR Part 52":
+                 specificComments = `\n\n---\nSpecific Comments on FAR Part 52:\n\nThe deletion of dozens of standard clauses, such as those governing delivery and quantity variations, creates a chaotic legal environment. The shift to non-standard, contract-specific clauses increases our legal review costs, bidding complexity, and the likelihood of disputes. This disproportionately harms small businesses who lack large in-house legal teams. Retaining the 'Changes' clauses (52.243) proves that some non-statutory clauses are essential. The same logic must be applied to other foundational risk-sharing clauses.\n\nRecommendation:\n\nRestore the standard, non-statutory clauses that provide predictable risk allocation and clear procedures, such as 52.211-16 and 52.211-18. This will reduce ambiguity, lower bidding costs, and create a more fair and stable contracting environment for all parties.`;
+                 break;
+            case "Remaining Parts":
+                specificComments = `\n\n---\nSpecific Comments on FAR Parts 18, 34, 39, and 43:\n\nThe changes across these parts reveal a pattern of deregulation that creates instability and increases barriers. Moving emergency acquisition rules to a website (Part 18) creates "regulation by webpage." Removing protections for new entrants on major programs (Part 34) entrenches large incumbents. While the streamlining of Part 39 is understandable, the full retention of the 'Changes' clauses in Part 43 proves that some non-statutory rules are essential and sets a precedent for restoring others, like the 'Variation in Quantity' clause.\n\nRecommendation:\n\nAdopt a balanced approach that recognizes the value of standardized procedures. Do not relegate essential guidance to unstable websites. Restore foundational, risk-sharing clauses that have worked for decades and have been proven essential to sound procurement.`;
+                break;
+        }
+
+        const closing = `\n\nSincerely,\n${advocacyData.firstName} ${advocacyData.lastName}\n${advocacyData.businessName}\n${advocacyData.fullAddress}`;
+        return `Subject: Feedback on ${farPart} and the Revolutionary FAR Overhaul\n${salutation}${personalStory}${generalPoints}${specificComments}\n${closing}`;
+    }
+
+    function copyCommentToClipboard() {
+        navigator.clipboard.writeText(elements.commentTextBox.textContent).then(() => {
+            elements.copyBtn.textContent = 'Copied to Clipboard!';
+            setTimeout(() => { elements.copyBtn.textContent = 'Step A: Copy Comment to Clipboard'; }, 2500);
+        }).catch(err => {
+            console.error('Failed to copy text: ', err);
+            alert("Failed to copy comments. Please copy the text manually.");
+        });
+    }
+
+})();
+</script>
+
+</body>
+</html>
+Add Take Action FAR Parts Historical
