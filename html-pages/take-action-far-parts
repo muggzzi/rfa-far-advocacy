@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Submit Your FAR Comments</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Source Sans Pro', sans-serif; background-color: #f8f9fa; margin: 0; padding: 0; }
+    .container { max-width: 880px; margin: 30px auto; background: #fff; padding: 30px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h1 { color: #003366; margin-bottom: 10px; }
+    .progress { font-size: 0.95em; color: #444; margin-bottom: 12px; }
+    .progress-bar { width: 100%; background-color: #e0e0e0; border-radius: 4px; overflow: hidden; height: 12px; margin-bottom: 25px; }
+    .progress-fill { height: 100%; background-color: #0F62FE; transition: width 0.3s ease; }
+    .explainer, .comment-box { background: #f3f4f6; padding: 15px; border-left: 5px solid #0F62FE; margin-bottom: 25px; white-space: pre-wrap; }
+    .comment-box { background: #fdfdfd; border: 1px solid #ccc; }
+    .buttons { margin-top: 25px; display: flex; gap: 15px; flex-wrap: wrap; }
+    .btn {
+      background-color: #0F62FE; color: white; padding: 12px 20px;
+      border: none; border-radius: 5px; font-weight: bold;
+      font-size: 1em; cursor: pointer; text-align: center;
+    }
+    .btn.green { background-color: #28a745; }
+    .btn:hover { opacity: 0.9; }
+    .loader, .error { font-weight: bold; text-align: center; margin-top: 20px; }
+    .loader { color: #003366; display: none; }
+    .error { color: #c53030; display: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1 id="step-title">Loading...</h1>
+  <div class="progress" id="progress-info"></div>
+  <div class="progress-bar"><div id="progress-bar-fill" class="progress-fill" style="width: 0%;"></div></div>
+  <div class="explainer" id="explainer-text">Loading explainer...</div>
+  <div class="comment-box" id="comment-content">Loading comment...</div>
+  <div class="buttons">
+    <button class="btn" id="copy-btn">Copy to Clipboard</button>
+    <a class="btn" id="gsa-link" href="#" target="_blank">Open GSA Submission Form</a>
+    <button class="btn green" id="confirm-btn">I Submitted This Comment</button>
+  </div>
+  <div class="loader" id="loader">Loading next part...</div>
+  <div class="error" id="error-msg"></div>
+</div>
+
+<script>
+(async function () {
+  const sheetUrl = 'https://raw.githubusercontent.com/muggzzi/rfa-data/refs/heads/main/RFA_FARParts_Steps_MASTER_9PARTS_GSAFIXED.json';
+  const errorBox = document.getElementById('error-msg');
+  const sessionData = JSON.parse(sessionStorage.getItem('advocacyData') || '{}');
+  const today = new Date();
+
+  if (!sessionData.firstName || !sessionData.email || !sessionData.submissions) {
+    window.location.href = "/take-action-far-council";
+    return;
+  }
+
+  const submissions = sessionData.submissions;
+
+  let steps = [];
+  try {
+    const res = await fetch(sheetUrl);
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+    const json = await res.json();
+    steps = json.filter(row => new Date(row.Deadline) >= today);
+  } catch (err) {
+    console.error("Failed to load FAR parts data:", err);
+    errorBox.textContent = "Could not load FAR comment steps. Please try again later.";
+    errorBox.style.display = 'block';
+    return;
+  }
+
+  const nextStep = steps.find(row => !submissions[row.FAR_Part]);
+  if (!nextStep) {
+    window.location.href = "/take-action-far-council-thank-you";
+    return;
+  }
+
+  const currentIndex = steps.findIndex(s => s.FAR_Part === nextStep.FAR_Part);
+  const stepTitle = `Step ${currentIndex + 1} of ${steps.length}: Comment on ${nextStep.FAR_Part}`;
+  const progress = `Step ${currentIndex + 1} of ${steps.length}`;
+  const progressPercent = Math.round(((currentIndex + 1) / steps.length) * 100);
+
+  const clean = str => (str || "")
+    .replace(/[’‘]/g, "'").replace(/[“”]/g, '"')
+    .replace(/[–—]/g, "--").replace(/ /g, ' ')
+    .replace(/
+|
+|
+/g, '\n');
+
+  const commentTemplate = clean(nextStep.Comment_Template)
+    .replace(/\[FullName\]/g, `${sessionData.firstName} ${sessionData.lastName}`)
+    .replace(/\[BusinessTitle\]/g, sessionData.businessTitle)
+    .replace(/\[CompanyName\]/g, sessionData.businessName)
+    .replace(/\[CompanyDescription\]/g, sessionData.companyDescription)
+    .replace(/\[PersonalStory\]/g, sessionData.personalStory || "")
+    .replace(/\[Your Congressional District\]/g, sessionData.congressionalDistrict)
+    .replace(/\[Your Name, Title\]/g, `${sessionData.firstName} ${sessionData.lastName}, ${sessionData.businessTitle}`)
+    .replace(/\[Your Company Name\]/g, sessionData.businessName)
+    .replace(/\[\$ amount\]/g, sessionData.districtData.District_TotalSBRevenue || "N/A")
+    .replace(/\[X\]%/g, sessionData.districtData.District_PercentFromSetAsides || "N/A")
+    .replace(/\[Y\]%/g, sessionData.districtData.District_PercentVendorDecline || "N/A")
+    .replace(/\[Z\]/g, "since 2008");
+
+  document.getElementById('step-title').textContent = stepTitle;
+  document.getElementById('progress-info').textContent = progress;
+  document.getElementById('progress-bar-fill').style.width = `${progressPercent}%`;
+  document.getElementById('explainer-text').textContent = clean(nextStep.Explainer_Text);
+  document.getElementById('comment-content').textContent = commentTemplate;
+  document.getElementById('gsa-link').href = nextStep.GSA_URL;
+
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    navigator.clipboard.writeText(commentTemplate).then(() => {
+      document.getElementById('copy-btn').textContent = 'Copied!';
+      setTimeout(() => document.getElementById('copy-btn').textContent = 'Copy to Clipboard', 2000);
+    });
+  });
+
+  document.getElementById('confirm-btn').addEventListener('click', async () => {
+    submissions[nextStep.FAR_Part] = new Date().toISOString();
+    sessionData.submissions = submissions;
+    sessionStorage.setItem('advocacyData', JSON.stringify(sessionData));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => { window.location.reload(); }, 500);
+  });
+})();
+</script>
+</body>
+</html>
+
+Add Take Action Far Parts - CURRENT 6/30/25
