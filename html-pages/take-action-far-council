@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Restore Fair Access™ – Start Your Comments</title>
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Source Sans Pro', sans-serif; background-color: #f8f9fa; }
+    .container { max-width: 880px; margin: 0 auto; padding: 30px; background: #fff; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+    h1 { color: #003366; text-align: center; }
+    .field { margin-bottom: 20px; }
+    label { font-weight: bold; display: block; margin-bottom: 6px; color: #1F2937; }
+    input[type="text"], input[type="email"], textarea {
+      width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 1em;
+    }
+    textarea { resize: vertical; min-height: 100px; }
+    .prompt { font-size: 0.9em; color: #666; margin-top: 4px; }
+    button {
+      width: 100%; background-color: #0F62FE; color: #fff; padding: 15px;
+      border: none; border-radius: 5px; font-weight: bold; font-size: 1.1em; cursor: pointer;
+    }
+    button:hover { background-color: #003BB5; }
+    .loader, .error { text-align: center; font-weight: bold; margin-top: 10px; }
+    .loader { color: #003366; display: none; }
+    .error { color: #c53030; display: none; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Take Action to Protect Small Business</h1>
+  <p style="text-align:center;">Begin your comment submission process. Your voice matters.</p>
+
+  <div class="field"><label for="first-name">First Name</label><input type="text" id="first-name" required></div>
+  <div class="field"><label for="last-name">Last Name</label><input type="text" id="last-name" required></div>
+  <div class="field"><label for="business-name">Business Name</label><input type="text" id="business-name" required></div>
+  <div class="field"><label for="business-title">Business Title (optional)</label><input type="text" id="business-title"></div>
+  <div class="field"><label for="email">Email Address</label><input type="email" id="email" required></div>
+  <div class="field"><label for="full-address">Full Street Address</label><input type="text" id="full-address" required>
+    <div class="prompt">Used only to determine your Congressional District</div>
+  </div>
+  <div class="field"><label for="company-description">Company Description</label><textarea id="company-description" required></textarea>
+    <div class="prompt">Briefly describe your company, size, years in business, and the work you do.</div>
+  </div>
+  <div class="field"><label for="personal-story">Your Personal Story (Optional)</label><textarea id="personal-story"></textarea>
+    <div class="prompt">Example: "As a woman-owned engineering firm in Texas, set-asides have been critical to our growth."</div>
+  </div>
+
+  <button id="submit-btn">Verify and Proceed</button>
+  <div id="loader" class="loader">Looking up your district...</div>
+  <div id="error" class="error"></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const geoKey = 'e6b27467818e8b6b5428b54253e85185b751b41';
+  const sheetUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRS51yfSbpUQdw0YW2X25bm4Q550u6l5tH1F9zfgGQdL-QxmU_dpDUzSKa1tXbTrYStV3HmYjY6hp5N/pub?gid=443180837&single=true&output=csv';
+
+  const btn = document.getElementById('submit-btn');
+  const loader = document.getElementById('loader');
+  const errorEl = document.getElementById('error');
+
+  btn.addEventListener('click', async () => {
+    errorEl.style.display = 'none';
+    btn.disabled = true;
+    loader.style.display = 'block';
+
+    const data = {
+      firstName: document.getElementById('first-name').value.trim(),
+      lastName: document.getElementById('last-name').value.trim(),
+      businessName: document.getElementById('business-name').value.trim(),
+      businessTitle: document.getElementById('business-title').value.trim() || "Owner",
+      email: document.getElementById('email').value.trim(),
+      fullAddress: document.getElementById('full-address').value.trim(),
+      companyDescription: document.getElementById('company-description').value.trim(),
+      personalStory: document.getElementById('personal-story').value.trim()
+    };
+
+    if (!data.firstName || !data.lastName || !data.businessName || !data.email || !data.fullAddress || !data.companyDescription) {
+      errorEl.textContent = "Please complete all required fields.";
+      errorEl.style.display = 'block';
+      loader.style.display = 'none';
+      btn.disabled = false;
+      return;
+    }
+
+    try {
+      const geoRes = await fetch(`https://api.geocod.io/v1.7/geocode?q=${encodeURIComponent(data.fullAddress)}&fields=cd&api_key=${geoKey}`);
+      const geo = await geoRes.json();
+      const cd = geo.results?.[0]?.fields?.congressional_districts?.[0];
+      const state = geo.results?.[0]?.address_components?.state;
+      if (!cd || !state) throw new Error("Geocoding failed");
+
+      const csv = await new Promise((resolve, reject) => {
+        Papa.parse(sheetUrl, {
+          download: true, header: true, complete: res => resolve(res.data), error: err => reject(err)
+        });
+      });
+
+      const match = csv.find(r => {
+  const sheetDistrict = String(r.District).replace(/^0+/, '');
+  const userDistrict = String(cd.district_number).replace(/^0+/, '');
+  return r.StateAbbr === state && sheetDistrict === userDistrict;
+});
+
+
+      const sessionData = {
+        ...data,
+        congressionalDistrict: `${state}-${String(cd.district_number).padStart(2, '0')}`,
+        stateAbbr: state,
+        districtNumber: String(cd.district_number).padStart(2, '0'),
+        districtData: match || {},
+        submissions: {}
+      };
+
+      sessionStorage.setItem('advocacyData', JSON.stringify(sessionData));
+      window.location.href = "/take-action-far-parts";
+    } catch (e) {
+      console.error(e);
+      errorEl.textContent = "Address lookup failed or API rate limit reached. Please wait and try again.";
+      errorEl.style.display = 'block';
+    } finally {
+      loader.style.display = 'none';
+      btn.disabled = false;
+    }
+  });
+});
+</script>
+</body>
+</html>
+Add Take Action Far Council
